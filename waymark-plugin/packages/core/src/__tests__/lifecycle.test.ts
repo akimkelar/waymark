@@ -20,12 +20,6 @@ describe("getInitialStatus", () => {
   it("task starts as open", () => {
     expect(getInitialStatus("task")).toBe("open");
   });
-  it("domain has no status", () => {
-    expect(getInitialStatus("domain")).toBeUndefined();
-  });
-  it("feature has no status", () => {
-    expect(getInitialStatus("feature")).toBeUndefined();
-  });
 });
 
 describe("isValidTransition", () => {
@@ -35,17 +29,29 @@ describe("isValidTransition", () => {
   it("open-question: resolved → open is invalid", () => {
     expect(isValidTransition("open-question", "resolved", "open")).toBe(false);
   });
+  it("blocker: open → unblocked is valid", () => {
+    expect(isValidTransition("blocker", "open", "unblocked")).toBe(true);
+  });
   it("decision: draft → accepted is valid", () => {
     expect(isValidTransition("decision", "draft", "accepted")).toBe(true);
   });
   it("decision: accepted → deprecated is valid", () => {
     expect(isValidTransition("decision", "accepted", "deprecated")).toBe(true);
   });
+  it("decision: deprecated → accepted is invalid", () => {
+    expect(isValidTransition("decision", "deprecated", "accepted")).toBe(false);
+  });
   it("task: open → in-progress is valid", () => {
     expect(isValidTransition("task", "open", "in-progress")).toBe(true);
   });
   it("task: done → open is invalid", () => {
     expect(isValidTransition("task", "done", "open")).toBe(false);
+  });
+  it("alternative: proposed → selected is valid", () => {
+    expect(isValidTransition("alternative", "proposed", "selected")).toBe(true);
+  });
+  it("alternative: proposed → rejected is valid", () => {
+    expect(isValidTransition("alternative", "proposed", "rejected")).toBe(true);
   });
 });
 
@@ -58,7 +64,9 @@ describe("getAllowedTransitions", () => {
     expect(allowed).toContain("done");
     expect(allowed).toContain("cancelled");
   });
-  it("domain has no transitions from any status", () => {
-    expect(getAllowedTransitions("domain", "open")).toHaveLength(0);
+  it("terminal statuses have no further transitions", () => {
+    expect(getAllowedTransitions("open-question", "resolved")).toHaveLength(0);
+    expect(getAllowedTransitions("blocker", "unblocked")).toHaveLength(0);
+    expect(getAllowedTransitions("gap", "closed")).toHaveLength(0);
   });
 });

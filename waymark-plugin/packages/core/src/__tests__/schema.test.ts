@@ -20,12 +20,6 @@ describe("toNeo4jLabel", () => {
   it("converts task to Task", () => {
     expect(toNeo4jLabel("task")).toBe("Task");
   });
-  it("converts domain to Domain", () => {
-    expect(toNeo4jLabel("domain")).toBe("Domain");
-  });
-  it("converts feature to Feature", () => {
-    expect(toNeo4jLabel("feature")).toBe("Feature");
-  });
 });
 
 describe("toNeo4jRelType", () => {
@@ -35,11 +29,11 @@ describe("toNeo4jRelType", () => {
   it("converts suggests to SUGGESTS", () => {
     expect(toNeo4jRelType("suggests")).toBe("SUGGESTS");
   });
-  it("converts belongs-to to BELONGS_TO", () => {
-    expect(toNeo4jRelType("belongs-to")).toBe("BELONGS_TO");
+  it("converts selected to SELECTED", () => {
+    expect(toNeo4jRelType("selected")).toBe("SELECTED");
   });
-  it("converts has-feature to HAS_FEATURE", () => {
-    expect(toNeo4jRelType("has-feature")).toBe("HAS_FEATURE");
+  it("converts caused-by to CAUSED_BY", () => {
+    expect(toNeo4jRelType("caused-by")).toBe("CAUSED_BY");
   });
 });
 
@@ -47,7 +41,16 @@ describe("fromNeo4jLabel", () => {
   it("converts OpenQuestion back to open-question", () => {
     expect(fromNeo4jLabel("OpenQuestion")).toBe("open-question");
   });
+  it("converts Decision back to decision", () => {
+    expect(fromNeo4jLabel("Decision")).toBe("decision");
+  });
   it("returns null for unknown label", () => {
     expect(fromNeo4jLabel("Unknown")).toBeNull();
+  });
+  it("returns null for removed Domain label", () => {
+    expect(fromNeo4jLabel("Domain")).toBeNull();
+  });
+  it("returns null for removed Feature label", () => {
+    expect(fromNeo4jLabel("Feature")).toBeNull();
   });
 });

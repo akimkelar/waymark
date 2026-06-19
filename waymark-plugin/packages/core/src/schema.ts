@@ -7,8 +7,6 @@ const NODE_LABEL_MAP: Record<WaymarkNodeType, string> = {
   "decision": "Decision",
   "alternative": "Alternative",
   "task": "Task",
-  "domain": "Domain",
-  "feature": "Feature",
 };
 
 const LABEL_TO_TYPE_MAP: Record<string, WaymarkNodeType> = Object.fromEntries(
@@ -19,10 +17,7 @@ const EDGE_REL_MAP: Record<WaymarkEdgeType, string> = {
   "resolves": "RESOLVES",
   "suggests": "SUGGESTS",
   "selected": "SELECTED",
-  "belongs-to": "BELONGS_TO",
-  "has-feature": "HAS_FEATURE",
   "caused-by": "CAUSED_BY",
-  "addresses": "ADDRESSES",
 };
 
 export function toNeo4jLabel(type: WaymarkNodeType): string {

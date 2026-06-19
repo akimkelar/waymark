@@ -4,18 +4,13 @@ export type WaymarkNodeType =
   | "gap"
   | "decision"
   | "alternative"
-  | "task"
-  | "domain"
-  | "feature";
+  | "task";
 
 export type WaymarkEdgeType =
   | "resolves"
   | "suggests"
   | "selected"
-  | "belongs-to"
-  | "has-feature"
-  | "caused-by"
-  | "addresses";
+  | "caused-by";
 
 export type OpenQuestionStatus = "open" | "resolved";
 export type BlockerStatus = "open" | "unblocked";
@@ -32,6 +27,17 @@ export type WaymarkStatus =
   | AlternativeStatus
   | TaskStatus;
 
+export const TERMINAL_STATUSES: WaymarkStatus[] = [
+  "resolved",
+  "unblocked",
+  "closed",
+  "deprecated",
+  "done",
+  "cancelled",
+  "selected",
+  "rejected",
+];
+
 export interface WaymarkNode {
   id: string;
   type: WaymarkNodeType;
@@ -46,8 +52,6 @@ export interface WaymarkNode {
   pros?: string[];
   cons?: string[];
   recurrence?: "one-time" | "recurring";
-  domainId?: string;
-  featureId?: string;
 }
 
 export interface WaymarkEdge {
