@@ -7,9 +7,10 @@
 .idea/
 .vscode/
 
-# docs/examples are scratch — not for commit
+# docs sub-folders that are scratch/examples — not for commit
 docs/examples/
 docs/superpowers/
+docs/graph/
 
 # Environment
 .env
@@ -30,3 +31,6 @@ venv/
 
 # Logs
 *.log
+
+# TypeScript build info
+*.tsbuildinfo
