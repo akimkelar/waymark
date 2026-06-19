@@ -47,14 +47,30 @@ docs/
 
 ## Documentation (read these first)
 
-| Document | When to read |
+### Graph docs — start here
+
+These are the primary reference for the graph model. Read before touching any node types, relationships, queries, or MCP tools.
+
+| Document | What it covers |
 |---|---|
-| [Architecture overview](docs/architecture/overview.md) | Understanding the system design |
-| [Graph schema](docs/architecture/graph-schema.md) | Node/edge types, properties, Cypher queries |
-| [MCP server reference](docs/architecture/mcp-server.md) | Tool parameters, agent usage patterns |
-| [Neo4j setup](docs/configuration/neo4j-setup.md) | Configuring credentials, creating the database |
-| [Plugin build guide](docs/configuration/plugin-build.md) | Building `@waymark/core`, AI agent checklist |
-| [Claude Code integration](docs/configuration/claude-code-integration.md) | MCP config, skill install, verification |
+| [Graph architecture](docs/graph/architecture.md) | Node types, properties, relationships, status lifecycles, Mermaid diagram, key Cypher patterns |
+| [Quality rules](docs/graph/quality-rules.md) | What makes a valid graph: per-node rules, relationship constraints, validation queries, safety checklist |
+| [Staleness rules](docs/graph/outdating-rules.md) | How nodes go stale, detection queries, provenance tracking, resolution guidance |
+
+### Architecture docs
+
+| Document | What it covers |
+|---|---|
+| [Architecture overview](docs/architecture/overview.md) | Why Waymark exists, the write→review→decide cycle, DDD alignment |
+| [MCP server reference](docs/architecture/mcp-server.md) | All 8 MCP tools with parameters, agent usage patterns, error handling |
+
+### Configuration docs
+
+| Document | What it covers |
+|---|---|
+| [Neo4j setup](docs/configuration/neo4j-setup.md) | Credentials, database creation, config resolution order |
+| [Plugin build guide](docs/configuration/plugin-build.md) | Build steps, AI agent verification checklist, common errors |
+| [Claude Code integration](docs/configuration/claude-code-integration.md) | MCP config, skill install, end-to-end verification |
 
 ## Build
 
@@ -103,6 +119,7 @@ See [claude-code-integration.md](docs/configuration/claude-code-integration.md) 
 
 ## Guidance for Claude
 
+- **Start with `docs/graph/`** — architecture, quality rules, and staleness rules are the primary reference for any work touching the graph model, MCP tools, or Cypher queries.
 - **Read the docs** before making changes — `docs/architecture/` explains design decisions; `docs/configuration/` explains the build and integration.
 - **`docs/examples/`** is excluded from git and contains scratch examples — do not read or reference files inside it.
 - All TypeScript uses ESM with `.js` extensions on imports (even for `.ts` sources).

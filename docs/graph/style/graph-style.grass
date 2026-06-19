@@ -1,0 +1,168 @@
+node.Domain {
+  color: #5E1EC4;
+  size: 60px;
+}
+
+node.Feature {
+  color: #4833C4;
+  size: 52px;
+}
+
+node.BusinessRule {
+  color: #3D3DC4;
+  size: 34px;
+}
+
+node.Decision {
+  color: #2858C0;
+  size: 38px;
+}
+
+node.Library {
+  color: #2C7ED4;
+  size: 20px;
+}
+
+node.Entity {
+  color: #2E96B8;
+  size: 34px;
+}
+
+node.Pattern {
+  color: #3AA8A8;
+  size: 20px;
+}
+
+node.Alternative {
+  color: #3AA898;
+  size: 24px;
+}
+
+node.CodeArtifact {
+  color: #3A9E6A;
+  size: 28px;
+}
+
+node.Process {
+  color: #3E9850;
+  size: 28px;
+}
+
+node.ViewArtifact {
+  color: #489038;
+  size: 24px;
+}
+
+node.Risk {
+  color: #C4426E;
+  size: 30px;
+}
+
+node.Pitfall {
+  color: #C44250;
+  size: 30px;
+}
+
+node.Constraint {
+  color: #D04E3A;
+  size: 30px;
+}
+
+node.OpenQuestion {
+  color: #E07838;
+  size: 40px;
+}
+
+node.Gap {
+  color: #E8A020;
+  size: 30px;
+}
+
+relationship.HAS_FEATURE {
+  width: 2px;
+}
+
+relationship.HAS_QUESTION {
+  width: 1px;
+}
+
+relationship.INFORMED_BY {
+  width: 1px;
+}
+
+relationship.REJECTED_IN {
+  width: 1px;
+}
+
+relationship.USES_ENTITY {
+  width: 1px;
+}
+
+relationship.DEPENDS_ON {
+  width: 2px;
+  color: #322489;
+}
+
+relationship.HAS_RULE {
+  width: 2px;
+  color: #322489;
+}
+
+relationship.APPLIES_PATTERN {
+  width: 1px;
+  color: #322489;
+}
+
+relationship.USES_LIBRARY {
+  width: 1px;
+  color: #322489;
+}
+
+relationship.FK_TO {
+  width: 1px;
+  color: #206981;
+}
+
+relationship.FOLLOWS_PATTERN {
+  width: 1px;
+  color: #206981;
+}
+
+relationship.OPTION_FOR {
+  width: 1px;
+  color: #29766A;
+}
+
+relationship.AFFECTS {
+  width: 1px;
+  color: #892E38;
+}
+
+relationship.PREVENTED_BY {
+  width: 1px;
+  color: #892E38;
+}
+
+relationship.CONCERNS {
+  width: 1px;
+  color: #892E4D;
+}
+
+relationship.MITIGATED_BY {
+  width: 1px;
+  color: #892E4D;
+}
+
+relationship.SHAPES {
+  width: 1px;
+  color: #923729;
+}
+
+relationship.EXPLAINS {
+  width: 1px;
+  color: #923729;
+}
+
+relationship.HAS_GAP {
+  width: 1px;
+}
