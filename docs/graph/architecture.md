@@ -2,23 +2,40 @@
 
 ## Overview
 
-Waymark maintains a single Neo4j graph where AI agents write structured traces during execution and humans read them to make decisions. Unlike knowledge-graph systems that rebuild on every run, the Waymark graph is **persistent and append-only**: nodes accumulate across sessions, statuses transition forward, and the history of uncertainty and resolution is preserved.
+Waymark maintains a single persistent Neo4j graph where AI agents write structured traces during execution and humans read them to make decisions. The graph is **append-only**: nodes accumulate across sessions, statuses transition forward, and the history of uncertainty and resolution is preserved.
 
-There are no subgraphs or `kind` separators — every node is a first-class citizen in the same graph. The graph is organized by `Domain` and `Feature` labels that reflect DDD boundaries.
+The graph's primary value is in **Decisions and Tasks** — permanent artifacts that accumulate across all agent sessions and form an authoritative record of what was decided and what remains to be done. Ephemeral nodes (OpenQuestion, Blocker, Gap, Alternative) exist only while unresolved; once addressed, they are excluded from the active trail but remain queryable for audit purposes.
+
+There are no Domain or Feature nodes in Waymark's schema. Those are foreign concerns. The graph is self-contained within the 6 types below.
+
+---
+
+## The Cycle
 
 ```
 Agent runs
   → hits uncertainty
     → writes OpenQuestion node
-      → attaches up to 3 Alternative nodes (agent-suggested options)
-        → optionally links to Domain or Feature
+      → attaches Alternative nodes (agent-suggested options)
 
-Human reviews the graph
-  → runs /waymark to read the trail
-    → runs /waymark-resolve to select or write a Decision
-      → Decision linked, OpenQuestion marked resolved
-        → agent reads updated graph and continues
+Human reviews the trail
+  → runs /waymark to read active nodes
+    → writes a Decision (resolving the question)
+      → Decision linked via RESOLVES → OpenQuestion archived as resolved
+        → Decision stands alone, capturing the full context
+          → agent reads updated graph and continues
 ```
+
+---
+
+## Two Tiers
+
+| Tier | Types | Lifecycle |
+|---|---|---|
+| Ephemeral (requests) | OpenQuestion, Blocker, Gap, Alternative | Created open/proposed → reach terminal status → excluded from active trail |
+| Permanent (artifacts) | Decision, Task | Accumulate indefinitely; never removed from trail |
+
+**Terminal statuses** (excluded from normal queries): `resolved`, `unblocked`, `closed`, `deprecated`, `done`, `cancelled`, `selected`, `rejected`
 
 ---
 
@@ -30,53 +47,62 @@ All nodes share a common base of properties. Additional properties are listed pe
 
 | Property | Type | Required | Description |
 |---|---|---|---|
-| `id` | string | ✓ | Unique identifier: `<type>:<uuid>` e.g. `open-question:abc-123` |
-| `type` | string | ✓ | One of the 8 node types (kebab-case) |
-| `title` | string | ✓ | Short label — one line |
-| `description` | string | ✓ | Full explanation |
-| `createdAt` | ISO 8601 | ✓ | When the node was created |
-| `updatedAt` | ISO 8601 | ✓ | When the node was last modified |
-| `createdBy` | string | — | Agent ID or human identifier |
-| `domainId` | string | — | Parent domain, if scoped |
-| `featureId` | string | — | Parent feature, if scoped |
+| `id` | string | yes | Unique identifier: `<type>:<uuid>` e.g. `open-question:abc-123` |
+| `type` | string | yes | One of the 6 node types (kebab-case) |
+| `title` | string | yes | Short label — one line |
+| `description` | string | yes | Full explanation |
+| `createdAt` | ISO 8601 | yes | When the node was created |
+| `updatedAt` | ISO 8601 | yes | When the node was last modified |
+| `createdBy` | string | no | Agent ID or human identifier |
+| `status` | string | no | Type-specific; see lifecycles below |
+
+---
 
 ### OpenQuestion
 
-Something the agent could not resolve. Requires human input before the agent can proceed or choose a path.
+Something the agent could not resolve on its own. Requires human input before the agent can proceed or choose a path. Tier: **ephemeral**.
 
 | Property | Type | Values |
 |---|---|---|
 | `status` | string | `open` → `resolved` |
 | `urgency` | string | `low` \| `medium` \| `high` |
 
+---
+
 ### Blocker
 
-A hard stop. The agent cannot proceed at all without resolution. More severe than an OpenQuestion.
+A hard stop. The agent cannot proceed at all without resolution. Separated into its own label for dashboard priority — blockers surface above open questions in review UIs. Tier: **ephemeral**.
 
 | Property | Type | Values |
 |---|---|---|
 | `status` | string | `open` → `unblocked` |
 
+---
+
 ### Gap
 
-A one-time piece of missing context or capability that the agent identified. Created, addressed, and closed. Unlike a Blocker, a Gap does not necessarily stop the agent — it records a known deficiency.
+A QA note or piece of missing context identified by the agent. Unlike a Blocker, a Gap does not necessarily stop work — it records a known deficiency for later resolution. Tier: **ephemeral**.
 
 | Property | Type | Values |
 |---|---|---|
 | `status` | string | `open` → `closed` |
 
+---
+
 ### Decision
 
-A choice made — either by a human (in response to an OpenQuestion) or by an agent (logged for review). Decisions form the resolution backbone of the graph.
+A choice made — either by a human (in response to an OpenQuestion) or by an agent (logged for review). Decisions are **permanent lasting artifacts** that form the resolution backbone of the graph. They accumulate across sessions and must never be lost. Tier: **permanent**.
 
 | Property | Type | Values |
 |---|---|---|
 | `status` | string | `draft` → `accepted` → `deprecated` |
-| `rationale` | string | Why this choice was made |
+| `rationale` | string | Why this choice was made — required at `accepted` |
+
+---
 
 ### Alternative
 
-A path not taken. Agents attach Alternatives to OpenQuestions to give humans context for choosing.
+An option proposed by the agent for a specific OpenQuestion or Blocker. Gives the human context for choosing. Tier: **ephemeral**.
 
 | Property | Type | Values |
 |---|---|---|
@@ -84,47 +110,37 @@ A path not taken. Agents attach Alternatives to OpenQuestions to give humans con
 | `pros` | string[] | Arguments in favour |
 | `cons` | string[] | Arguments against |
 
+---
+
 ### Task
 
-Recurring or one-time work the agent identified but did not execute. Intended for agents to pick up later.
+Recurring or one-time work identified by the agent. Tasks are **permanent** — they accumulate and persist until explicitly done or cancelled. Intended for agents to pick up in future sessions. Tier: **permanent**.
 
 | Property | Type | Values |
 |---|---|---|
 | `status` | string | `open` → `in-progress` → `done` \| `cancelled` |
 | `recurrence` | string | `one-time` \| `recurring` |
 
-### Domain
-
-A DDD domain boundary. Groups related OpenQuestions, Decisions, and Features together. Created by humans or agents when structuring the knowledge space.
-
-No status. Contains Features via `HAS_FEATURE`.
-
-### Feature
-
-A named capability within a Domain. Used to scope questions, decisions, and gaps to a specific area of the product.
-
-No status. Must be linked to a Domain via `HAS_FEATURE`.
-
 ---
 
 ## Status Lifecycles
 
 ```
-OpenQuestion:  open ──────────────────────► resolved
+OpenQuestion:  open ──────────────────────────────► resolved
 
-Blocker:       open ──────────────────────► unblocked
+Blocker:       open ──────────────────────────────► unblocked
 
-Gap:           open ──────────────────────► closed
+Gap:           open ──────────────────────────────► closed
 
-Decision:      draft ─────► accepted ──────► deprecated
-               draft ──────────────────────► deprecated
+Decision:      draft ──────► accepted ─────────────► deprecated
+               draft ─────────────────────────────► deprecated
 
-Alternative:   proposed ──► selected
-               proposed ──► rejected
+Alternative:   proposed ───► selected
+               proposed ───► rejected
 
-Task:          open ──► in-progress ──────► done
-               open ──► cancelled
-               in-progress ──► cancelled
+Task:          open ────────► in-progress ──────────► done
+               open ────────────────────────────────► cancelled
+               in-progress ────────────────────────► cancelled
 ```
 
 Transitions are enforced by the MCP server's `update_status` tool. Backward transitions are rejected.
@@ -136,32 +152,17 @@ Transitions are enforced by the MCP server's `update_status` tool. Backward tran
 | Neo4j type | Semantic name | From | To | Description |
 |---|---|---|---|---|
 | `RESOLVES` | resolves | Decision | OpenQuestion | Decision answers the question |
-| `SUGGESTS` | suggests | Alternative | OpenQuestion | Agent proposes this path |
+| `SUGGESTS` | suggests | Alternative | OpenQuestion or Blocker | Agent proposes this path |
 | `SELECTED` | selected | Decision | Alternative | Human chose this alternative |
-| `BELONGS_TO` | belongs-to | Any node | Domain or Feature | Scopes this node to a context |
-| `HAS_FEATURE` | has-feature | Domain | Feature | Domain contains a feature |
 | `CAUSED_BY` | caused-by | Blocker | OpenQuestion | Blocker stems from this unresolved question |
-| `ADDRESSES` | addresses | Gap | Feature | Gap identified in this feature's coverage |
 
 ### Naming conventions
 
-Node labels use **PascalCase**: `OpenQuestion`, `Blocker`, `Gap`, `Decision`, `Alternative`, `Task`, `Domain`, `Feature`.
+Node labels use **PascalCase**: `OpenQuestion`, `Blocker`, `Gap`, `Decision`, `Alternative`, `Task`.
 
-Relationship types use **UPPER_SNAKE_CASE**: `RESOLVES`, `SUGGESTS`, `SELECTED`, `BELONGS_TO`, `HAS_FEATURE`, `CAUSED_BY`, `ADDRESSES`.
+Relationship types use **UPPER_SNAKE_CASE**: `RESOLVES`, `SUGGESTS`, `SELECTED`, `CAUSED_BY`.
 
 Node IDs use **kebab-type:uuid**: `open-question:abc-123`, `decision:def-456`.
-
----
-
-## Freshness Metadata
-
-Every node carries `createdAt` and `updatedAt` (ISO 8601). These enable:
-
-- **Age-based staleness detection** — find questions open for more than N days
-- **Audit trail** — when was this decision made?
-- **Prioritization** — surface oldest unresolved items first
-
-The `createdBy` field provides **provenance**: which agent wrote this node, or which human. This is critical for tracing back uncertain decisions to their source.
 
 ---
 
@@ -169,44 +170,24 @@ The `createdBy` field provides **provenance**: which agent wrote this node, or w
 
 ```mermaid
 graph TD
-    classDef question fill:#1858B8,stroke:#6898D8,stroke-width:2px,color:#E8EEFF,font-size:13px
-    classDef blocker fill:#C4426E,stroke:#E898B4,stroke-width:2px,color:#FFE8F2,font-size:13px
-    classDef gap fill:#D04E3A,stroke:#F09880,stroke-width:2px,color:#FFE8F2,font-size:13px
-    classDef decision fill:#2A8A2A,stroke:#70C870,stroke-width:2px,color:#E8FFE8,font-size:13px
-    classDef alternative fill:#8A5A1A,stroke:#C89060,stroke-width:2px,color:#FFF4E8,font-size:13px
-    classDef task fill:#5E1EC4,stroke:#C490F0,stroke-width:2px,color:#E8EEFF,font-size:13px
-    classDef domain fill:#1A5A8A,stroke:#5090C8,stroke-width:3px,color:#E8F4FF,font-size:14px
-    classDef feature fill:#2A6A9A,stroke:#60A0D8,stroke-width:2px,color:#E8F4FF,font-size:13px
+    classDef ephemeral fill:#4A5568,stroke:#718096,color:#E2E8F0
+    classDef permanent fill:#2B6CB0,stroke:#4299E1,color:#EBF8FF,font-weight:bold
 
-    OQ["OpenQuestion\n(open → resolved)"]
-    BL["Blocker\n(open → unblocked)"]
-    GP["Gap\n(open → closed)"]
-    DC["Decision\n(draft → accepted → deprecated)"]
-    AL["Alternative\n(proposed → selected/rejected)"]
-    TK["Task\n(open → in-progress → done)"]
-    DM["Domain"]
-    FT["Feature"]
+    OQ["OpenQuestion\nopen → resolved"]
+    BL["Blocker\nopen → unblocked"]
+    GP["Gap\nopen → closed"]
+    AL["Alternative\nproposed → selected/rejected"]
+    DC["Decision\ndraft → accepted → deprecated"]
+    TK["Task\nopen → in-progress → done"]
 
     AL -->|SUGGESTS| OQ
+    AL -->|SUGGESTS| BL
     DC -->|RESOLVES| OQ
     DC -->|SELECTED| AL
     BL -->|CAUSED_BY| OQ
-    GP -->|ADDRESSES| FT
-    DM -->|HAS_FEATURE| FT
-    OQ -->|BELONGS_TO| DM
-    OQ -->|BELONGS_TO| FT
-    DC -->|BELONGS_TO| DM
-    BL -->|BELONGS_TO| FT
-    TK -->|BELONGS_TO| FT
 
-    class OQ question
-    class BL blocker
-    class GP gap
-    class DC decision
-    class AL alternative
-    class TK task
-    class DM domain
-    class FT feature
+    class OQ,BL,GP,AL ephemeral
+    class DC,TK permanent
 ```
 
 ---
@@ -214,29 +195,23 @@ graph TD
 ## Key Query Patterns
 
 ```cypher
-// Full trail — last 20 nodes created
-MATCH (n) WHERE n.id IS NOT NULL RETURN n ORDER BY n.createdAt DESC LIMIT 20;
+// Active trail (excludes resolved/archived items)
+MATCH (n) WHERE n.id IS NOT NULL
+AND NOT n.status IN ['resolved','unblocked','closed','deprecated','done','cancelled','selected','rejected']
+RETURN n ORDER BY n.createdAt DESC;
 
-// All open questions
-MATCH (n:OpenQuestion {status: 'open'}) RETURN n ORDER BY n.createdAt;
+// All accepted decisions
+MATCH (n:Decision {status: 'accepted'}) RETURN n ORDER BY n.updatedAt DESC;
 
-// All open blockers
+// All open questions with their alternatives
+MATCH (a:Alternative)-[:SUGGESTS]->(q:OpenQuestion {status: 'open'})
+RETURN q, collect(a) AS alternatives;
+
+// All open blockers (highest priority)
 MATCH (n:Blocker {status: 'open'}) RETURN n ORDER BY n.createdAt;
 
-// Resolution chain — what question does this decision answer?
-MATCH (d:Decision)-[:RESOLVES]->(q:OpenQuestion) RETURN d, q;
-
-// Alternatives for a question
-MATCH (a:Alternative)-[:SUGGESTS]->(q:OpenQuestion {id: $id}) RETURN a;
-
-// All nodes in a domain
-MATCH (n {domainId: $domainId}) RETURN n ORDER BY n.type, n.createdAt;
-
-// Unresolved items (open or draft) in a feature
-MATCH (n) WHERE n.featureId = $featureId AND n.status IN ['open', 'draft'] RETURN n;
-
-// Nodes created by a specific agent
-MATCH (n {createdBy: $agentId}) RETURN n ORDER BY n.createdAt DESC;
+// Decisions made by a specific agent or human
+MATCH (n:Decision {createdBy: $author}) RETURN n ORDER BY n.createdAt DESC;
 ```
 
 See [`docs/graph/quality-rules.md`](quality-rules.md) for validation queries and [`docs/graph/outdating-rules.md`](outdating-rules.md) for staleness detection.
