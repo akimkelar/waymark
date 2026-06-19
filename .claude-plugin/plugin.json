@@ -1,0 +1,9 @@
+{
+  "name": "waymark",
+  "description": "A write-first Neo4j communication layer for AI agents. Agents leave structured traces (OpenQuestion, Blocker, Gap, Decision, Alternative, Task) during execution. Humans review the trail, make Decisions, and agents continue.",
+  "version": "0.1.0",
+  "author": {
+    "name": "akimkelar"
+  },
+  "homepage": "https://github.com/akimkelar/waymark"
+}

@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .waymark/config.json ] && node -e \"try { const c=JSON.parse(require('fs').readFileSync('.waymark/config.json','utf8')); const open=c.openQuestions||0; const blockers=c.blockers||0; if(open>0||blockers>0) console.log('[waymark] Trail: ' + open + ' open question(s), ' + blockers + ' blocker(s). Run /waymark to review.'); } catch(e){}\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
