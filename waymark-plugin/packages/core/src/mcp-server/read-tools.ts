@@ -1,10 +1,11 @@
 import type { Session } from "neo4j-driver";
 import { toNeo4jLabel } from "../schema.js";
+import { TERMINAL_STATUSES } from "../types.js";
 import type { WaymarkNode, WaymarkNodeType } from "../types.js";
 
 export async function getTrail(
   session: Session,
-  filter?: { type?: WaymarkNodeType; status?: string; domainId?: string }
+  filter?: { type?: WaymarkNodeType; status?: string; includeResolved?: boolean }
 ): Promise<WaymarkNode[]> {
   let query: string;
   const params: Record<string, unknown> = {};
@@ -18,10 +19,9 @@ export async function getTrail(
   if (filter?.status) {
     query += ` AND n.status = $status`;
     params["status"] = filter.status;
-  }
-  if (filter?.domainId) {
-    query += ` AND n.domainId = $domainId`;
-    params["domainId"] = filter.domainId;
+  } else if (!filter?.includeResolved) {
+    query += ` AND (n.status IS NULL OR NOT n.status IN $terminalStatuses)`;
+    params["terminalStatuses"] = TERMINAL_STATUSES;
   }
 
   query += ` RETURN n ORDER BY n.createdAt DESC`;
@@ -39,11 +39,8 @@ export async function getNode(session: Session, nodeId: string): Promise<Waymark
   return result.records[0].get("n").properties as WaymarkNode;
 }
 
-export async function getOpenQuestions(
-  session: Session,
-  domainId?: string
-): Promise<WaymarkNode[]> {
-  return getTrail(session, { type: "open-question", status: "open", domainId });
+export async function getOpenQuestions(session: Session): Promise<WaymarkNode[]> {
+  return getTrail(session, { type: "open-question", status: "open" });
 }
 
 export async function getBlockers(session: Session): Promise<WaymarkNode[]> {
@@ -80,11 +77,17 @@ export async function resolveQuestion(
   }
 
   const now = new Date().toISOString();
+
+  // Link decision, mark question resolved, archive proposed alternatives
   await session.run(
     `MATCH (d {id: $decisionId}), (q {id: $questionId})
      MERGE (d)-[r:RESOLVES]->(q)
      ON CREATE SET r.createdAt = $now
-     SET q.status = 'resolved', q.updatedAt = $now`,
+     SET q.status = 'resolved', q.updatedAt = $now
+     WITH q
+     OPTIONAL MATCH (a:Alternative)-[:SUGGESTS]->(q)
+     WHERE a.status = 'proposed'
+     SET a.status = 'rejected', a.updatedAt = $now`,
     { questionId, decisionId, now }
   );
 

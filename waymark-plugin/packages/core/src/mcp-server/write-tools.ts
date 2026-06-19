@@ -16,8 +16,6 @@ export async function writeNode(
     pros?: string[];
     cons?: string[];
     recurrence?: "one-time" | "recurring";
-    domainId?: string;
-    featureId?: string;
   }
 ): Promise<{ id: string }> {
   const id = `${type}:${randomUUID()}`;
@@ -39,8 +37,6 @@ export async function writeNode(
     ...(props.pros !== undefined && { pros: props.pros }),
     ...(props.cons !== undefined && { cons: props.cons }),
     ...(props.recurrence !== undefined && { recurrence: props.recurrence }),
-    ...(props.domainId !== undefined && { domainId: props.domainId }),
-    ...(props.featureId !== undefined && { featureId: props.featureId }),
   };
 
   await session.run(

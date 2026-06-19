@@ -19,13 +19,13 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
     tools: [
       {
         name: "write_node",
-        description: "Write a Waymark node to Neo4j. Types: open-question, blocker, gap, decision, alternative, task, domain, feature.",
+        description: "Write a Waymark node to Neo4j. Types: open-question, blocker, gap, decision, alternative, task.",
         inputSchema: {
           type: "object" as const,
           properties: {
             type: {
               type: "string",
-              enum: ["open-question", "blocker", "gap", "decision", "alternative", "task", "domain", "feature"],
+              enum: ["open-question", "blocker", "gap", "decision", "alternative", "task"],
               description: "The node type",
             },
             title: { type: "string", description: "Short label" },
@@ -36,8 +36,6 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
             pros: { type: "array", items: { type: "string" } },
             cons: { type: "array", items: { type: "string" } },
             recurrence: { type: "string", enum: ["one-time", "recurring"] },
-            domainId: { type: "string" },
-            featureId: { type: "string" },
           },
           required: ["type", "title", "description"],
         },
@@ -52,7 +50,7 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
             targetId: { type: "string" },
             edgeType: {
               type: "string",
-              enum: ["resolves", "suggests", "selected", "belongs-to", "has-feature", "caused-by", "addresses"],
+              enum: ["resolves", "suggests", "selected", "caused-by"],
             },
           },
           required: ["sourceId", "targetId", "edgeType"],
@@ -72,13 +70,13 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
       },
       {
         name: "get_trail",
-        description: "Read Waymark nodes, optionally filtered by type, status, or domain.",
+        description: "Read Waymark nodes, optionally filtered by type or status. By default excludes resolved/archived items.",
         inputSchema: {
           type: "object" as const,
           properties: {
             type: { type: "string" },
             status: { type: "string" },
-            domainId: { type: "string" },
+            includeResolved: { type: "boolean", description: "Include resolved/archived items. Default false." },
           },
         },
       },
@@ -93,10 +91,10 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
       },
       {
         name: "get_open_questions",
-        description: "Get all unresolved OpenQuestion nodes, optionally filtered by domain.",
+        description: "Get all unresolved OpenQuestion nodes.",
         inputSchema: {
           type: "object" as const,
-          properties: { domainId: { type: "string" } },
+          properties: {},
         },
       },
       {
@@ -157,7 +155,7 @@ export async function startMCPServer(projectRoot: string): Promise<void> {
           result = await getNode(session, args["nodeId"] as string);
           break;
         case "get_open_questions":
-          result = await getOpenQuestions(session, args["domainId"] as string | undefined);
+          result = await getOpenQuestions(session);
           break;
         case "get_blockers":
           result = await getBlockers(session);
