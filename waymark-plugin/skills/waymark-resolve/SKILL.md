@@ -15,9 +15,7 @@ Guides a human through resolving an OpenQuestion by selecting or authoring a Dec
 2. Shows the question and any existing Alternative nodes (suggestions the agent left)
 3. Asks the human to pick an alternative or write a new Decision
 4. Creates the Decision node if needed
-5. Links `Decision -[:RESOLVES]-> OpenQuestion` and marks question as `resolved`
-6. If an Alternative was chosen, links `Decision -[:SELECTED]-> Alternative`
-7. Confirms what changed
+5. Links `Decision -[:RESOLVES]-> OpenQuestion` and marks question as `resolved`; also automatically archives any linked Alternatives
 
 ## Step-by-step flow
 
@@ -39,7 +37,7 @@ Display:
 - Title and full description
 - Urgency level
 - Created by / created at
-- Any Alternative nodes (fetch with: `get_trail({ type: "alternative" })` and filter by featureId or domainId, or check nodes with this question's ID in description)
+- Any Alternative nodes linked to this question via SUGGESTS
 
 Show alternatives like:
 ```
@@ -80,10 +78,12 @@ If an alternative was selected:
 link_nodes(decisionId, alternativeId, "selected")
 ```
 
-Resolve the question (creates RESOLVES link AND marks question resolved):
+Resolve the question (creates RESOLVES link, marks question resolved, and automatically archives all linked Alternatives):
 ```
 resolve_question(questionId, decisionId)
 ```
+
+**Note:** `resolve_question` archives all Alternatives linked to the question automatically. Do not manually call `update_status` on alternatives after this — they are already handled.
 
 ### Step 5: Confirm
 
@@ -92,6 +92,7 @@ Show:
 ✓ Question resolved
   OpenQuestion: <title> → resolved
   Decision: <title> (draft)
+  Linked Alternatives: automatically archived
   
   To accept this decision: /waymark-write then update status to accepted
   Or run: update_status(<decisionId>, "accepted")

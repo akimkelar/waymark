@@ -1,6 +1,6 @@
 # /waymark-write — Write a Waymark Node
 
-Lets a human (or agent) manually write any Waymark node into the graph and optionally link it to a Domain or Feature.
+Lets a human (or agent) manually write any Waymark node into the graph.
 
 ## Usage
 
@@ -9,10 +9,9 @@ Lets a human (or agent) manually write any Waymark node into the graph and optio
 /waymark-write task                   # create a Task node
 /waymark-write gap                    # create a Gap node
 /waymark-write open-question          # create an OpenQuestion
-/waymark-write domain                 # create a Domain
-/waymark-write feature                # create a Feature (asks for parent Domain)
 /waymark-write decision               # create a Decision
 /waymark-write alternative            # create an Alternative (asks for parent OpenQuestion)
+/waymark-write blocker                # create a Blocker
 ```
 
 ## Interaction flow
@@ -20,7 +19,7 @@ Lets a human (or agent) manually write any Waymark node into the graph and optio
 ### Step 1: Ask for node type (if not provided)
 
 > "What kind of node would you like to create?
-> open-question / blocker / gap / decision / alternative / task / domain / feature"
+> open-question / blocker / gap / decision / alternative / task"
 
 ### Step 2: Ask for required fields
 
@@ -33,19 +32,12 @@ Always ask:
 | Type | Extra prompts |
 |---|---|
 | open-question | urgency? (low/medium/high) |
+| blocker | urgency? (low/medium/high) |
 | task | recurrence? (one-time/recurring) |
 | decision | rationale? |
-| alternative | pros? (comma-separated), cons? (comma-separated) |
-| feature | parent domain ID? (required — features must belong to a domain) |
-| alternative | parent OpenQuestion ID? (to link via SUGGESTS) |
+| alternative | pros? (comma-separated), cons? (comma-separated), parent OpenQuestion ID? (to link via SUGGESTS) |
 
-### Step 4: Ask for domain/feature link (for content nodes)
-
-For node types other than `domain` and `feature`:
-> "Link to a domain? (enter domainId or press Enter to skip)"
-> "Link to a feature? (enter featureId or press Enter to skip)"
-
-### Step 5: Preview and confirm
+### Step 4: Preview and confirm
 
 Show a summary:
 ```
@@ -54,24 +46,20 @@ About to create:
   Title: Weekly dependency audit
   Description: Audit npm dependencies for known CVEs every Monday
   Recurrence: recurring
-  Domain: auth-domain
 
 Write this node? (yes/no)
 ```
 
-### Step 6: Write and link
+### Step 5: Write and link
 
 ```
-write_node(type, { title, description, ...optionalFields, domainId?, featureId? })
+write_node(type, { title, description, ...optionalFields })
 ```
 
 Post-write auto-linking:
-- If a `feature` was created with a `domainId`: `link_nodes(domainId, featureId, "has-feature")`
-- If `domainId` was provided on any node: `link_nodes(nodeId, domainId, "belongs-to")`
-- If `featureId` was provided: `link_nodes(nodeId, featureId, "belongs-to")`
 - If an `alternative` has a parent OpenQuestion ID: `link_nodes(alternativeId, questionId, "suggests")`
 
-### Step 7: Confirm
+### Step 6: Confirm
 
 ```
 ✓ Node created
@@ -92,7 +80,6 @@ title: "Should we use GraphQL or REST for the public API?"
 description: "The spec mentions both. GraphQL would enable flexible queries but adds tooling complexity."
 urgency: high
 createdBy: agent-api-design
-domainId: api-domain
 ```
 
 ## Error handling

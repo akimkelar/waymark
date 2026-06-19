@@ -16,7 +16,6 @@ Reads the Waymark trail from Neo4j and presents a human-readable summary of open
 /waymark
 /waymark --type open-question
 /waymark --type blocker
-/waymark --domain <domainId>
 /waymark --status open
 ```
 
@@ -56,7 +55,7 @@ Run /waymark-resolve <id> to resolve an open question.
 
 Use MCP tools:
 - `get_blockers()` — fetch open blockers
-- `get_open_questions(domainId?)` — fetch open questions, sorted by urgency
+- `get_open_questions()` — fetch open questions, sorted by urgency
 - `get_trail({ type: "gap", status: "open" })` — fetch gaps
 - `get_trail({ type: "task", status: "open" })` — fetch open tasks
 
